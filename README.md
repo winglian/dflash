@@ -140,6 +140,44 @@ output = draft.spec_generate(input_ids=input_ids, max_new_tokens=2048, temperatu
 print(tokenizer.decode(output[0], skip_special_tokens=False))
 ```
 
+The Transformers backend also supports multiple sampled continuations for a
+single prompt:
+
+```python
+output = draft.spec_generate(
+    input_ids=input_ids,
+    max_new_tokens=2048,
+    temperature=0.7,
+    target=target,
+    stop_token_ids=[tokenizer.eos_token_id],
+    num_return_sequences=4,
+)
+for row in output:
+    print(tokenizer.decode(row, skip_special_tokens=False))
+```
+
+`num_return_sequences` batches one prompt across multiple continuations. It is
+also compatible with multiple prompts when the inputs are left-padded and an
+`attention_mask` is provided:
+
+```python
+tokenizer.padding_side = "left"
+batch = tokenizer(prompts, return_tensors="pt", padding=True).to(target.device)
+output = draft.spec_generate(
+    input_ids=batch.input_ids,
+    attention_mask=batch.attention_mask,
+    max_new_tokens=2048,
+    temperature=0.7,
+    target=target,
+    stop_token_ids=[tokenizer.eos_token_id],
+    num_return_sequences=2,
+)
+```
+
+The returned rows are ordered by prompt, then sample. With two prompts and
+`num_return_sequences=2`, rows 0-1 belong to the first prompt and rows 2-3
+belong to the second prompt.
+
 ### MLX (Apple Silicon)
 
 There have been many great community DFlash implementations on MLX; we provide a simple and efficient one here, tested on an Apple M5 Pro with Qwen3, Qwen3.5 and Gemma-4 models.
