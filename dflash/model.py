@@ -121,8 +121,10 @@ def dflash_generate(
     base_position_ids[:, num_input_tokens:] = (
         prompt_lengths.to(target.device).unsqueeze(1) + decode_offsets
     )
-    past_key_values_target = DynamicCache()
-    past_key_values_draft = DynamicCache()
+    target_config = getattr(target, "config", None)
+    draft_config = getattr(model, "config", None)
+    past_key_values_target = DynamicCache(config=target_config)
+    past_key_values_draft = DynamicCache(config=draft_config)
 
     prefill_start = _cuda_time() if return_stats else None
     output = target(
